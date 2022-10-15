@@ -9,12 +9,12 @@ import java.util.UUID;
 @Entity
 @Table(name="order_info")
 @Data
-public class Order {
+public class OrderDAO {
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private UUID id;
     private String itemName;
-    private int itemPrice;
+    private double itemPrice;
     private int itemQuantity;
     private Date createDate;
     private Date updatedDate;

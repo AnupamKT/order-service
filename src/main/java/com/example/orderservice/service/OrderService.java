@@ -1,5 +1,8 @@
 package com.example.orderservice.service;
 
+import com.example.orderservice.common.OrderNotFoundException;
+import com.example.orderservice.common.OrderServiceException;
+import com.example.orderservice.dao.OrderDAO;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.Orders;
 import com.example.orderservice.model.Response;
@@ -11,77 +14,67 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.persistence.EntityNotFoundException;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
-    public ResponseEntity<Response> saveOrder(Order order) {
+    public Response saveOrder(Order order) throws OrderServiceException {
         ObjectMapper mapper = new ObjectMapper();
-        Response response = new Response();
-        com.example.orderservice.dao.Order orderDao = mapper.convertValue(order, com.example.orderservice.dao.Order.class);
-        orderDao.setCreateDate(new Date());
-        orderDao.setUpdatedDate(new Date());
-        com.example.orderservice.dao.Order savedOrder = orderRepository.save(orderDao);
-        if (savedOrder != null) {
-            response.setMessage("order created successfully");
-            response.setStatusCode(202);
-            return ResponseEntity.accepted().body(response);
-        } else {
-            response.setStatusCode(500);
-            response.setMessage("error occurred while creating order!! please try again");
-            return ResponseEntity.internalServerError().body(response);
+        OrderDAO dao = null;
+        try {
+            dao = mapper.convertValue(order, OrderDAO.class);
+            dao.setCreateDate(new Date());
+            dao.setUpdatedDate(new Date());
+            OrderDAO savedOrder = orderRepository.save(dao);
+        } catch (Exception e) {
+            String msg = "error occurred while creating order:" + order;
+            throw new OrderServiceException(msg);
         }
+        return new Response(200, dao);
     }
 
-    public ResponseEntity<Response> deleteOrderById(String id) {
+    public Response deleteOrderById(String id) throws Exception {
         Response response = new Response();
-        com.example.orderservice.dao.Order orderToDelete = null;
+        Optional<OrderDAO> orderToDeleteOptional = Optional.empty();
+        String msg = null;
         try {
-            orderToDelete = orderRepository.getById(UUID.fromString(id));
-            if (orderToDelete != null) {
+            orderToDeleteOptional = orderRepository.findById(UUID.fromString(id));
+            if (orderToDeleteOptional.isPresent()) {
                 orderRepository.deleteById(UUID.fromString(id));
-                response.setMessage("order delete successfully");
-                response.setStatusCode(200);
+            } else {
+                msg = "order not found with Id:" + id;
+                throw new OrderNotFoundException(msg);
             }
         } catch (Exception e) {
-            if (e instanceof EntityNotFoundException) {
-                response.setMessage("Internal server error occurred while deleting order");
-                response.setStatusCode(500);
-                return ResponseEntity.notFound().build();
+            if (e instanceof OrderNotFoundException) {
+                throw new OrderNotFoundException("invalid order id " + e.getMessage());
             } else {
-                response.setMessage("Internal server error occurred while deleting order");
-                response.setStatusCode(500);
-                return ResponseEntity.internalServerError().body(response);
+                msg = "error occurred while deleting order with Id:" + id;
+                throw new OrderServiceException(msg);
             }
         }
-        return ResponseEntity.ok(response);
+        msg = "Order deleted successfully";
+        return new Response(200, msg);
     }
 
-    public ResponseEntity<Response> getAllOrders(Long userId) {
-        Response response = new Response();
-        Optional<List<com.example.orderservice.dao.Order>> ordersOptional = null;
+    public Response getAllOrders(Long userId) throws OrderServiceException {
+        Orders orders = new Orders();
         try {
-            ordersOptional = orderRepository.getByUserId(userId);
+            Optional<List<OrderDAO>> ordersOptional = orderRepository.getByUserId(userId);
             if (ordersOptional.isPresent() && !CollectionUtils.isEmpty(ordersOptional.get())) {
-                Orders orders = new Orders();
                 orders.setOrders(ordersOptional.get());
-                response.setStatusCode(200);
-                response.setResponseBody(orders);
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.notFound().build();
+            }
+            else{
+                orders.setOrders(new ArrayList<OrderDAO>());
             }
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-
+            String msg = "error occurred while fetching orders for userId:" + userId;
+            throw new OrderServiceException(msg);
         }
-
+        return new Response(200, orders);
 
     }
 }

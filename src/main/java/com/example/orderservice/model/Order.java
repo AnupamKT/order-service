@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Order {
     private String itemName;
-    private int itemPrice;
+    private double itemPrice;
     private int itemQuantity;
     private Long userId;
 }

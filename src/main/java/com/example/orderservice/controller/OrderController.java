@@ -26,9 +26,9 @@ public class OrderController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @GetMapping("/fetchall/{userId}")
-    public ResponseEntity<Response> fetchAllOrder(@PathVariable Long userId) throws OrderServiceException {
-        Response response = orderService.getAllOrders(userId);
+    @GetMapping("/fetchall/{userName}")
+    public ResponseEntity<Response> fetchAllOrder(@PathVariable String userName) throws OrderServiceException {
+        Response response = orderService.getAllOrders(userName);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

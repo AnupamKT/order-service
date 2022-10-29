@@ -10,5 +10,5 @@ import java.util.UUID;
 
 @Repository
 public interface OrderRepository extends JpaRepository<OrderDAO, UUID> {
-    Optional<List<OrderDAO>> getByUserId(Long userId);
+    Optional<List<OrderDAO>> getByUserName(String userName);
 }

@@ -23,17 +23,17 @@ public class OrderService {
 
     public Response saveOrder(Order order) throws OrderServiceException {
         ObjectMapper mapper = new ObjectMapper();
-        OrderDAO dao = null;
+        OrderDAO savedOrder = null;
         try {
-            dao = mapper.convertValue(order, OrderDAO.class);
+            OrderDAO dao = mapper.convertValue(order, OrderDAO.class);
             dao.setCreateDate(new Date());
             dao.setUpdatedDate(new Date());
-            OrderDAO savedOrder = orderRepository.save(dao);
+            savedOrder = orderRepository.save(dao);
         } catch (Exception e) {
             String msg = "error occurred while creating order:" + order;
             throw new OrderServiceException(msg);
         }
-        return new Response(200, dao);
+        return new Response(200, savedOrder);
     }
 
     public Response deleteOrderById(String id) throws Exception {
@@ -49,29 +49,25 @@ public class OrderService {
                 throw new OrderNotFoundException(msg);
             }
         } catch (Exception e) {
-            if (e instanceof OrderNotFoundException) {
-                throw new OrderNotFoundException("invalid order id " + e.getMessage());
-            } else {
-                msg = "error occurred while deleting order with Id:" + id;
-                throw new OrderServiceException(msg);
-            }
+            msg = "error occurred while deleting order with Id:" + id;
+            throw new OrderServiceException(msg);
+
         }
         msg = "Order deleted successfully";
         return new Response(200, msg);
     }
 
-    public Response getAllOrders(Long userId) throws OrderServiceException {
+    public Response getAllOrders(String userName) throws OrderServiceException {
         Orders orders = new Orders();
         try {
-            Optional<List<OrderDAO>> ordersOptional = orderRepository.getByUserId(userId);
+            Optional<List<OrderDAO>> ordersOptional = orderRepository.getByUserName(userName);
             if (ordersOptional.isPresent() && !CollectionUtils.isEmpty(ordersOptional.get())) {
                 orders.setOrders(ordersOptional.get());
-            }
-            else{
+            } else {
                 orders.setOrders(new ArrayList<OrderDAO>());
             }
         } catch (Exception e) {
-            String msg = "error occurred while fetching orders for userId:" + userId;
+            String msg = "error occurred while fetching orders for userId:" + userName;
             throw new OrderServiceException(msg);
         }
         return new Response(200, orders);
